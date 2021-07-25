@@ -1,30 +1,35 @@
+import java.awt.Component
+import java.awt.Font
 import java.sql.Time
-import java.util.*
-import kotlin.collections.ArrayList
+import java.sql.Date
+import javax.swing.JLabel
+import javax.swing.JTable
+import javax.swing.table.DefaultTableCellRenderer
 
-enum class Status
+data class Meeting(val title: String)
 {
-    ACCEPTED,
-    UNDECIDED
-}
+    var date: Date? = null
+    var startTime: Time? = null
+    var endTime: Time? = null
+    var room: Int? = null
 
-data class Meeting(val owner: Employee, val title: String)
-{
-    lateinit var date: Date
-    lateinit var startTime: Time
-    var duration: Double = 0.0
-    lateinit var room: Room
-    val employees = HashMap<Employee, Status>()
-
-    fun acceptMeeting(employee: Employee)
+    companion object
     {
-        employees[employee] = Status.ACCEPTED
+        val meetingSet = MeetingSet()
     }
 
-    fun rejectMeeting(employee: Employee) = employees.remove(employee)
+    fun updateTimings(date: Date, startTime: Time, endTime: Time, room: Int) = meetingSet.updateTime(this.title, date, startTime, endTime, room)
 
-    //TODO: Calculate timeslot based on accpeted employees
-    //TODO: Calculate appropriate room
+    class MeetingRenderer(private val meetings: ArrayList<Meeting>): DefaultTableCellRenderer()
+    {
+        private val label = JLabel()
 
-    //TODO: DefaultListCellRenderer for Employees
+        override fun getTableCellRendererComponent(table: JTable, anyVal: Any, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component
+        {
+            label.font = Font("Roboto", Font.PLAIN, 15)
+            val meeting = meetings.get(row)
+            label.text = "Title: ${meeting.title}"
+            return label
+        }
+    }
 }

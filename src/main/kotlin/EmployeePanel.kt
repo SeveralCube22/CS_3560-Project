@@ -11,7 +11,7 @@ class EmployeePanel(val employee: Employee): JFrame()
     {
         //setTitle(currentViewedUser.getID() + "'s " + "User View")
         this.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
-        this.bounds = Rectangle(100, 100, 477, 435)
+        this.bounds = Rectangle(100, 100, 325, 325)
 
         val guiParent = JPanel()
         val parentLayout = BoxLayout(guiParent, BoxLayout.X_AXIS)
@@ -50,7 +50,7 @@ class EmployeePanel(val employee: Employee): JFrame()
     private fun getOwnedMeetingsPanel(): JScrollPane
     {
         val meetingModel = DefaultListModel<Meeting>()
-        meetingModel.size =  employee.ownedMeetings.size
+        //meetingModel.size =  employee.ownedMeetings.size
 
         val meetingList = JList<Meeting>(meetingModel)
         meetingList.selectionBackground = Color.GREEN
@@ -66,7 +66,7 @@ class EmployeePanel(val employee: Employee): JFrame()
     private fun getInvitations(): JScrollPane
     {
         val meetingModel = DefaultListModel<Meeting>()
-        meetingModel.size = employee.invitedMeetings.size
+        //meetingModel.size = employee.invitedMeetings.size
 
         val meetingList = JList<Meeting>(meetingModel)
         meetingList.selectionBackground = Color.GREEN
@@ -82,7 +82,7 @@ class EmployeePanel(val employee: Employee): JFrame()
     private fun getNotifications(): JScrollPane
     {
         val notificationsModel = DefaultListModel<Meeting>()
-        notificationsModel.size = employee.notifications.size
+        //notificationsModel.size = employee.notifications.size
 
         val notificationList = JList<Meeting>(notificationsModel)
         notificationList.selectionBackground = Color.GREEN
