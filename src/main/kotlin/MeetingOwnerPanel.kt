@@ -19,7 +19,7 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
 
         val meetingTitleLabel = JLabel("Title: " + meeting.title) //TODO: Should be textfield
         meetingTitleLabel.font = font
-        val meetingOwnerLabel = JLabel("Owner: " + meeting.owner.name) //TODO: Should be employee name
+        val meetingOwnerLabel = JLabel("Owner: ") //TODO: Should be employee name
         meetingOwnerLabel.font = font
 
         val dateLabel = JLabel("Date: ")
@@ -92,7 +92,7 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
         val search = JTextField()
 
         val employeeModel = DefaultListModel<Meeting>()
-        employeeModel.size =  meeting.employees.size
+        //employeeModel.size =  meeting.employees.size
 
         val employeeList = JList<Meeting>(employeeModel)
         employeeList.selectionBackground = Color.GREEN
@@ -117,7 +117,7 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
     private fun getRoomsPanel(): JScrollPane
     {
         val roomModel = DefaultListModel<Meeting>()
-        roomModel.size =  meeting.employees.size
+        //roomModel.size =  meeting.employees.size
 
         val roomList = JList<Meeting>(roomModel)
         roomList.selectionBackground = Color.GREEN

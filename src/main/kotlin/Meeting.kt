@@ -2,9 +2,9 @@ import java.awt.Component
 import java.awt.Font
 import java.sql.Time
 import java.sql.Date
+import javax.swing.DefaultListCellRenderer
 import javax.swing.JLabel
-import javax.swing.JTable
-import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.JList
 
 data class Meeting(val title: String)
 {
@@ -15,20 +15,22 @@ data class Meeting(val title: String)
 
     companion object
     {
-        val meetingSet = MeetingSet()
+        private val meetingSet = MeetingSet()
     }
+
+    fun insert() = meetingSet.insert(this)
 
     fun updateTimings(date: Date, startTime: Time, endTime: Time, room: Int) = meetingSet.updateTime(this.title, date, startTime, endTime, room)
 
-    class MeetingRenderer(private val meetings: ArrayList<Meeting>): DefaultTableCellRenderer()
+    class MeetingRenderer: DefaultListCellRenderer()
     {
         private val label = JLabel()
 
-        override fun getTableCellRendererComponent(table: JTable, anyVal: Any, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component
+        override fun getListCellRendererComponent(list: JList<*>?, meeting: Any?, row: Int, isSelected: Boolean, hasFocus: Boolean): Component?
         {
             label.font = Font("Roboto", Font.PLAIN, 15)
-            val meeting = meetings.get(row)
-            label.text = "Title: ${meeting.title}"
+            if(meeting is Meeting)
+                label.text = "Title: ${meeting.title}"
             return label
         }
     }

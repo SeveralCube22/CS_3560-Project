@@ -1,13 +1,21 @@
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Rectangle
-import java.awt.Window
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.*
-
 
 class EmployeePanel(val employee: Employee): JFrame()
 {
+    private val ownedMeetingModel = DefaultListModel<Meeting>()
+    private val invitedMeetingModel = DefaultListModel<Meeting>()
+
     init
+    {
+        this.setupComponents()
+    }
+
+    private fun setupComponents()
     {
         //setTitle(currentViewedUser.getID() + "'s " + "User View")
         this.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
@@ -22,13 +30,28 @@ class EmployeePanel(val employee: Employee): JFrame()
         val scrollPanelParent = JPanel()
         val scrollLayout = BoxLayout(scrollPanelParent, BoxLayout.Y_AXIS)
         scrollPanelParent.layout = scrollLayout
-
         val ownedMeetingPanel = JPanel()
         val ownedMeetingLayout = BoxLayout(ownedMeetingPanel, BoxLayout.Y_AXIS)
         ownedMeetingPanel.layout = ownedMeetingLayout
         ownedMeetingPanel.add(getOwnedMeetingsPanel())
         val createButton = JButton()
         createButton.text = "Create Meeting"
+        createButton.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent?)
+            {
+                super.mouseClicked(e)
+                val meetingTitle = JOptionPane.showInputDialog("Enter meeting title: ") //implement check duplicate in meeting set that returns true or false
+                //depending on if meeting title is taken
+                val meeting = Meeting(meetingTitle)
+                meeting.insert()
+                val meetingMembership = MeetingMembership(employee.id, employee.name, meetingTitle, true)
+                meetingMembership.status = Status.ACCEPTED
+                meetingMembership.createMembership()
+                ownedMeetingModel.addElement(meeting)
+                MeetingOwnerPanel(meeting)
+            }
+        })
         ownedMeetingPanel.add(createButton)
 
         scrollPanelParent.add(ownedMeetingPanel)
@@ -37,26 +60,38 @@ class EmployeePanel(val employee: Employee): JFrame()
 
         guiParent.add(monthPanel)
         guiParent.add(scrollPanelParent)
+
+        guiParent.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent)
+            {
+                super.mouseClicked(e)
+                if(SwingUtilities.isRightMouseButton(e))
+                {
+                    val framePopup = FramePopMenu()
+                    framePopup.show(e.component, e.x, e.y)
+                }
+            }
+        })
         this.add(guiParent)
         this.size = Dimension(1280, 720)
         this.minimumSize = Dimension(1280, 720)
         this.isResizable = true
         this.isVisible = true
         this.pack()
-        println(monthPanel.size)
     }
-
 
     private fun getOwnedMeetingsPanel(): JScrollPane
     {
-        val meetingModel = DefaultListModel<Meeting>()
-        //meetingModel.size =  employee.ownedMeetings.size
+        val memberships = MeetingMembershipSet().viewOwnedMeetings(employee.id)
+        for(membership in memberships) ownedMeetingModel.addElement(Meeting(membership.meetingTile))
 
-        val meetingList = JList<Meeting>(meetingModel)
-        meetingList.selectionBackground = Color.GREEN
-        meetingList.background = Color.RED
+        val list = JList<Meeting>(ownedMeetingModel)
 
-        val meetings = JScrollPane(meetingList)
+        list.background = Color.WHITE
+        list.cellRenderer = Meeting.MeetingRenderer()
+        val meetings = JScrollPane(list)
+
         meetings.setBorder(BorderFactory.createTitledBorder("Owned Meetings" ))
         meetings.isOpaque = false
         meetings.isWheelScrollingEnabled = true;
@@ -65,15 +100,16 @@ class EmployeePanel(val employee: Employee): JFrame()
 
     private fun getInvitations(): JScrollPane
     {
-        val meetingModel = DefaultListModel<Meeting>()
-        //meetingModel.size = employee.invitedMeetings.size
+        val memberships = MeetingMembershipSet().viewInvitedMeetings(employee.id)
+        for(membership in memberships) invitedMeetingModel.addElement(Meeting(membership.meetingTile))
 
-        val meetingList = JList<Meeting>(meetingModel)
-        meetingList.selectionBackground = Color.GREEN
-        meetingList.background = Color.RED
+        val list = JList<Meeting>(invitedMeetingModel)
 
-        val meetings = JScrollPane(meetingList)
-        meetings.setBorder(BorderFactory.createTitledBorder("Invitations"))
+        list.background = Color.WHITE
+        list.cellRenderer = Meeting.MeetingRenderer()
+        val meetings = JScrollPane(list)
+
+        meetings.setBorder(BorderFactory.createTitledBorder("Invited Meetings" ))
         meetings.isOpaque = false
         meetings.isWheelScrollingEnabled = true;
         return meetings
@@ -95,5 +131,32 @@ class EmployeePanel(val employee: Employee): JFrame()
         return notifications
     }
 
-    //TODO: DefaultListCellRenderer for Meetings
+    private inner class FramePopMenu: JPopupMenu()
+    {
+        val visibility = JMenuItem("Change Visiblity")
+        val refresh = JMenuItem("Refresh")
+
+        init
+        {
+            visibility.isEnabled = true
+            refresh.isEnabled = true
+
+            visibility.addActionListener {
+                this@EmployeePanel.employee.changeVisibility()
+            }
+
+            refresh.addActionListener {
+                ownedMeetingModel.removeAllElements()
+                var memberships = MeetingMembershipSet().viewOwnedMeetings(employee.id)
+                for(membership in memberships) ownedMeetingModel.addElement(Meeting(membership.meetingTile))
+
+                invitedMeetingModel.removeAllElements()
+                memberships = MeetingMembershipSet().viewInvitedMeetings(employee.id)
+                for(membership in memberships) invitedMeetingModel.addElement(Meeting(membership.meetingTile))
+            }
+
+            this.add(visibility)
+            this.add(refresh)
+        }
+    }
 }
