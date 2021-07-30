@@ -1,8 +1,15 @@
 import java.awt.*
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.*
+
 
 class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change constructor. Param should be employee owner
 {
+    private val membershipsModel = DefaultListModel<MeetingMembership>()
+
     init
     {
         this.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
@@ -17,7 +24,7 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
 
         val font = Font(JLabel().font.name, Font.BOLD, 15)
 
-        val meetingTitleLabel = JLabel("Title: " + meeting.title) //TODO: Should be textfield
+        val meetingTitleLabel = JLabel("Title: " + meeting.title)
         meetingTitleLabel.font = font
         val meetingOwnerLabel = JLabel("Owner: ") //TODO: Should be employee name
         meetingOwnerLabel.font = font
@@ -59,19 +66,29 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
         infoConstraints.gridy = 0
         infoPanel.add(meetingTitleLabel, infoConstraints)
         infoConstraints.gridy = 1
-        infoPanel.add(meetingOwnerLabel, infoConstraints)
-        infoConstraints.gridy = 2
         infoPanel.add(datePanel, infoConstraints)
-        infoConstraints.gridy = 3
+        infoConstraints.gridy = 2
         infoPanel.add(durationPanel, infoConstraints)
-        infoConstraints.gridy = 4
+        infoConstraints.gridy = 3
         infoPanel.add(roomName, infoConstraints)
-        infoConstraints.gridy = 8
+        infoConstraints.gridy = 7
         infoPanel.add(button, infoConstraints)
 
         val scrollPanelParent = JPanel(GridLayout(2, 1))
         scrollPanelParent.add(getEmployeesPanel())
         scrollPanelParent.add(getRoomsPanel())
+
+        guiParent.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent)
+            {
+                if(SwingUtilities.isRightMouseButton(e))
+                {
+                    val framePopup = FramePopMenu()
+                    framePopup.show(e.component, e.x, e.y)
+                }
+            }
+        })
 
         guiParent.add(infoPanel)
         guiParent.add(scrollPanelParent)
@@ -90,13 +107,15 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
         val constraints = GridBagConstraints()
 
         val search = JTextField()
+        search.addActionListener {
+            val employeePopup = EmployeePopMenu(search.text)
+            employeePopup.show(search, search.getBounds().x, search.getBounds().y)
+        }
 
-        val employeeModel = DefaultListModel<Meeting>()
-        //employeeModel.size =  meeting.employees.size
-
-        val employeeList = JList<Meeting>(employeeModel)
+        val employeeList = JList<MeetingMembership>(membershipsModel)
         employeeList.selectionBackground = Color.GREEN
-        employeeList.background = Color.RED
+        employeeList.background = Color.WHITE
+        employeeList.cellRenderer = MeetingMembership.MeetingMembershipRenderer()
 
         val employees = JScrollPane(employeeList)
         employees.isOpaque = false
@@ -128,5 +147,49 @@ class MeetingOwnerPanel(val meeting: Meeting): JFrame() //TODO: Change construct
         rooms.isOpaque = false
         rooms.isWheelScrollingEnabled = true;
         return rooms
+    }
+
+    private inner class EmployeePopMenu(employeeName: String): JPopupMenu()
+    {
+        val potEmployees = EmployeeSet().getEmployeesByName(employeeName)
+
+        init
+        {
+            val membership = MeetingMembershipSet()
+            for(employee in potEmployees)
+            {
+                if(!membership.isEmployeeMember(employee.id, this@MeetingOwnerPanel.meeting.title))
+                {
+                    val menu = JMenuItem("Id: ${employee.id} Name: ${employeeName}")
+                    menu.addActionListener{
+                        val member = MeetingMembership(employee.id, employee.name, this@MeetingOwnerPanel.meeting.title, false)
+                        member.createMembership()
+                        membershipsModel.addElement(member)
+                    }
+                    this.add(menu)
+                }
+            }
+        }
+    }
+
+    private inner class FramePopMenu: JPopupMenu()
+    {
+        val refresh = JMenuItem("Refresh")
+
+        init
+        {
+            refresh.addActionListener {
+                membershipsModel.removeAllElements()
+                var memberships = MeetingMembershipSet().viewAllEmployeesInMeeting(this@MeetingOwnerPanel.meeting.title)
+                for(membership in memberships) membershipsModel.addElement(membership)
+            }
+
+            this.add(refresh)
+        }
+    }
+
+    private inner class EmployeesMenu: JPopupMenu()
+    {
+
     }
 }

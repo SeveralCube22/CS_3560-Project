@@ -6,6 +6,7 @@ import java.sql.SQLException;
 class EmployeeSet
 {
     private lateinit var connection: Connection
+    val test: String = "TEST"
 
     init
     {
@@ -38,6 +39,17 @@ class EmployeeSet
     {
         val statement = connection.createStatement()
         val query = "SELECT * FROM EMPLOYEE WHERE Emp_Visible = TRUE;"
+        val result: ResultSet = statement.executeQuery(query)
+        val employees = ArrayList<Employee>()
+        while(result.next())
+            employees.add(Employee(result.getInt("Id"), result.getString("Emp_Name"), result.getBoolean("Emp_Visible")))
+        return employees
+    }
+
+    fun getEmployeesByName(employeeName: String): ArrayList<Employee>
+    {
+        val statement = connection.createStatement()
+        val query = "SELECT * FROM EMPLOYEE WHERE Emp_Name = '${employeeName}' AND Emp_Visible = TRUE;"
         val result: ResultSet = statement.executeQuery(query)
         val employees = ArrayList<Employee>()
         while(result.next())

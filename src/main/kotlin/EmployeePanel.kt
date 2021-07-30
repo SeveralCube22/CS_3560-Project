@@ -7,8 +7,8 @@ import javax.swing.*
 
 class EmployeePanel(val employee: Employee): JFrame()
 {
-    private val ownedMeetingModel = DefaultListModel<Meeting>()
-    private val invitedMeetingModel = DefaultListModel<Meeting>()
+    private val ownedMeetingModel = DefaultListModel<MeetingMembership>()
+    private val invitedMeetingModel = DefaultListModel<MeetingMembership>()
 
     init
     {
@@ -17,7 +17,7 @@ class EmployeePanel(val employee: Employee): JFrame()
 
     private fun setupComponents()
     {
-        //setTitle(currentViewedUser.getID() + "'s " + "User View")
+        setTitle("${employee.name} Visible: ${if(employee.visible) "VISIBLE" else "INVISIBLE"}")
         this.defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
         this.bounds = Rectangle(100, 100, 325, 325)
 
@@ -25,7 +25,7 @@ class EmployeePanel(val employee: Employee): JFrame()
         val parentLayout = BoxLayout(guiParent, BoxLayout.X_AXIS)
         guiParent.layout = parentLayout
 
-        val monthPanel = MonthPanel(7, 2021, this)
+        val monthPanel = MonthPanel(employee,6, 2021, this)
 
         val scrollPanelParent = JPanel()
         val scrollLayout = BoxLayout(scrollPanelParent, BoxLayout.Y_AXIS)
@@ -40,7 +40,6 @@ class EmployeePanel(val employee: Employee): JFrame()
         {
             override fun mouseClicked(e: MouseEvent?)
             {
-                super.mouseClicked(e)
                 val meetingTitle = JOptionPane.showInputDialog("Enter meeting title: ") //implement check duplicate in meeting set that returns true or false
                 //depending on if meeting title is taken
                 val meeting = Meeting(meetingTitle)
@@ -48,7 +47,7 @@ class EmployeePanel(val employee: Employee): JFrame()
                 val meetingMembership = MeetingMembership(employee.id, employee.name, meetingTitle, true)
                 meetingMembership.status = Status.ACCEPTED
                 meetingMembership.createMembership()
-                ownedMeetingModel.addElement(meeting)
+                ownedMeetingModel.addElement(meetingMembership)
                 MeetingOwnerPanel(meeting)
             }
         })
@@ -65,7 +64,6 @@ class EmployeePanel(val employee: Employee): JFrame()
         {
             override fun mouseClicked(e: MouseEvent)
             {
-                super.mouseClicked(e)
                 if(SwingUtilities.isRightMouseButton(e))
                 {
                     val framePopup = FramePopMenu()
@@ -84,16 +82,30 @@ class EmployeePanel(val employee: Employee): JFrame()
     private fun getOwnedMeetingsPanel(): JScrollPane
     {
         val memberships = MeetingMembershipSet().viewOwnedMeetings(employee.id)
-        for(membership in memberships) ownedMeetingModel.addElement(Meeting(membership.meetingTile))
+        for(membership in memberships) ownedMeetingModel.addElement(membership)
 
-        val list = JList<Meeting>(ownedMeetingModel)
+        val list = JList<MeetingMembership>(ownedMeetingModel)
 
         list.background = Color.WHITE
-        list.cellRenderer = Meeting.MeetingRenderer()
-        val meetings = JScrollPane(list)
+        list.isOpaque = true
+        list.cellRenderer = MeetingMembership.MeetingRenderer()
 
+        list.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent)
+            {
+                if(SwingUtilities.isRightMouseButton(e))
+                {
+                    val index = list.locationToIndex(e.point)
+                    list.selectedIndex = index
+                    val meetingPopup = OwnedMeetingsMenu(ownedMeetingModel.get(index), ownedMeetingModel)
+                    meetingPopup.show(e.component, e.x, e.y)
+                }
+            }
+        })
+        val meetings = JScrollPane(list)
         meetings.setBorder(BorderFactory.createTitledBorder("Owned Meetings" ))
-        meetings.isOpaque = false
+        meetings.isOpaque = true
         meetings.isWheelScrollingEnabled = true;
         return meetings
     }
@@ -101,12 +113,28 @@ class EmployeePanel(val employee: Employee): JFrame()
     private fun getInvitations(): JScrollPane
     {
         val memberships = MeetingMembershipSet().viewInvitedMeetings(employee.id)
-        for(membership in memberships) invitedMeetingModel.addElement(Meeting(membership.meetingTile))
+        for(membership in memberships) invitedMeetingModel.addElement(membership)
 
-        val list = JList<Meeting>(invitedMeetingModel)
+        val list = JList<MeetingMembership>(invitedMeetingModel)
 
+        list.selectionBackground = Color.GREEN
         list.background = Color.WHITE
-        list.cellRenderer = Meeting.MeetingRenderer()
+        list.cellRenderer = MeetingMembership.MeetingRenderer()
+
+        list.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent)
+            {
+                if(SwingUtilities.isRightMouseButton(e))
+                {
+                    val index = list.locationToIndex(e.point)
+                    list.selectedIndex = index
+                    val meetingPopup = InvitedMeetingsMenu(invitedMeetingModel.get(index), invitedMeetingModel)
+                    meetingPopup.show(e.component, e.x, e.y)
+                }
+            }
+        })
+
         val meetings = JScrollPane(list)
 
         meetings.setBorder(BorderFactory.createTitledBorder("Invited Meetings" ))
@@ -131,6 +159,15 @@ class EmployeePanel(val employee: Employee): JFrame()
         return notifications
     }
 
+    private fun updateListModel(owned: Boolean)
+    {
+        if(owned) ownedMeetingModel.removeAllElements() else invitedMeetingModel.removeAllElements()
+        var memberships = if(owned) MeetingMembershipSet().viewOwnedMeetings(employee.id) else MeetingMembershipSet().viewInvitedMeetings(employee.id)
+        for(membership in memberships)
+            if(owned) ownedMeetingModel.addElement(membership)
+            else invitedMeetingModel.addElement(membership)
+    }
+
     private inner class FramePopMenu: JPopupMenu()
     {
         val visibility = JMenuItem("Change Visiblity")
@@ -138,21 +175,14 @@ class EmployeePanel(val employee: Employee): JFrame()
 
         init
         {
-            visibility.isEnabled = true
-            refresh.isEnabled = true
-
             visibility.addActionListener {
                 this@EmployeePanel.employee.changeVisibility()
+                this@EmployeePanel.title = "${employee.name} Visible: ${if(employee.visible) "VISIBLE" else "INVISIBLE"}"
             }
 
             refresh.addActionListener {
-                ownedMeetingModel.removeAllElements()
-                var memberships = MeetingMembershipSet().viewOwnedMeetings(employee.id)
-                for(membership in memberships) ownedMeetingModel.addElement(Meeting(membership.meetingTile))
-
-                invitedMeetingModel.removeAllElements()
-                memberships = MeetingMembershipSet().viewInvitedMeetings(employee.id)
-                for(membership in memberships) invitedMeetingModel.addElement(Meeting(membership.meetingTile))
+                updateListModel(true)
+                updateListModel(false)
             }
 
             this.add(visibility)

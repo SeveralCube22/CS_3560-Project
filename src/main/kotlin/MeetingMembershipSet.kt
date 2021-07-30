@@ -2,6 +2,7 @@ import java.sql.Connection
 import java.sql.Date
 import java.sql.DriverManager
 import java.sql.ResultSet
+import java.time.LocalDate
 
 class MeetingMembershipSet
 {
@@ -22,25 +23,25 @@ class MeetingMembershipSet
         statement.execute(query)
     }
 
-    fun deleteOwnedMeeting(meetingTitle: String)
+    fun delete(meetingTitle: String)
     {
         val statement = connection.createStatement()
-        val query = "DELETE FROM MEETING WHERE Title = ${meetingTitle};"
+        val query = "DELETE FROM MEETING WHERE Title = '${meetingTitle}';"
         statement.execute(query)
     }
 
     fun leaveMeeting(employeeId: Int, meetingTitle: String)
     {
         val statement = connection.createStatement()
-        val query = "DELETE FROM M_MEMBERSHIP WHERE Emp_Id = ${employeeId} AND M_Title = ${meetingTitle};"
+        val query = "DELETE FROM M_MEMBERSHIP WHERE Emp_Id = ${employeeId} AND M_Title = '${meetingTitle}';"
         statement.execute(query)
     }
 
     fun acceptMeeting(employeeId: Int, meetingTitle: String)
     {
         val statement = connection.createStatement()
-        val query = "UPDATE M_MEMBERSHIP SET Emp_Status = A " +
-                "WHERE Emp_Id = ${employeeId} M_Title = ${meetingTitle};"
+        val query = "UPDATE M_MEMBERSHIP SET Emp_Status = TRUE " +
+                "WHERE Emp_Id = ${employeeId} AND M_Title = '${meetingTitle}';"
         statement.execute(query)
     }
 
@@ -92,12 +93,12 @@ class MeetingMembershipSet
         return memberships
     }
 
-    fun getMeetingsOnDate(employeeId: Int, date: Date): ArrayList<MeetingMembership>
+    fun getMeetingsOnDate(employeeId: Int, date: LocalDate): ArrayList<MeetingMembership>
     {
         val statement = connection.createStatement()
-        val query = "SELECT * StartDate FROM (M_MEMBERSHIP AS M_M JOIN EMPLOYEE AS E) ON M_M.Emp_Id = E.Id) " +
+        val query = "SELECT * FROM (M_MEMBERSHIP AS M_M JOIN EMPLOYEE AS E ON M_M.Emp_Id = E.Id) " +
                     "JOIN MEETING AS M ON M_M.M_Title = M.Title " +
-                    "WHERE E.Id = ${employeeId} AND M.StartDate = ${date};"
+                    "WHERE E.Id = ${employeeId} AND M.StartDate = '${date}';"
 
         val result: ResultSet = statement.executeQuery(query)
         val memberships = ArrayList<MeetingMembership>()
@@ -111,6 +112,32 @@ class MeetingMembershipSet
                 membership.status = Status.ACCEPTED
                 memberships.add(membership)
             }
+        }
+        return memberships
+    }
+
+    fun isEmployeeMember(employeeId: Int, meetingTitle: String): Boolean
+    {
+        val statement = connection.createStatement()
+        val query = "SELECT COUNT(*) AS Total FROM M_MEMBERSHIP WHERE Emp_Id = ${employeeId} AND M_Title = '${meetingTitle}';"
+
+        val result: ResultSet = statement.executeQuery(query)
+        result.next()
+        return result.getInt("Total") != 0
+    }
+
+    fun viewAllEmployeesInMeeting(meetingTitle: String): ArrayList<MeetingMembership>
+    {
+        val statement = connection.createStatement()
+        val query = "SELECT * FROM M_MEMBERSHIP WHERE M_Title = '${meetingTitle}' AND M_Owner = FALSE;"
+        val result: ResultSet = statement.executeQuery(query)
+        val memberships = ArrayList<MeetingMembership>()
+        while(result.next())
+        {
+            val membership = MeetingMembership(result.getInt("Emp_Id"), result.getString("Emp_Name"),
+                result.getString("M_Title"), result.getBoolean("M_Owner"))
+            membership.status = if(result.getBoolean("Emp_Status")) Status.ACCEPTED else Status.UNDECIDED
+            memberships.add(membership)
         }
         return memberships
     }

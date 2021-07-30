@@ -1,4 +1,5 @@
 import java.sql.*
+import java.time.LocalDate
 
 class MeetingSet
 {
@@ -17,10 +18,17 @@ class MeetingSet
         statement.execute(query)
     }
 
-    fun updateTime(title: String, date: Date, startTime: Time, endTime: Time, room: Int)
+    fun delete(meetingTitle: String)
     {
         val statement = connection.createStatement()
-        val query = "UPDATE MEETING SET StartDate = ${date}, StartTime = ${startTime}, EndTime = ${endTime}, Room_Id = ${room} WHERE Title = ${title};"
+        val query = "DELETE FROM MEETING WHERE Title = '${meetingTitle}';"
+        statement.execute(query)
+    }
+
+    fun updateTime(title: String, date: LocalDate, startTime: Time, endTime: Time, room: Int)
+    {
+        val statement = connection.createStatement()
+        val query = "UPDATE MEETING SET StartDate = '${date}', StartTime = '${startTime}', EndTime = '${endTime}', Room_Id = ${room} WHERE Title = '${title}';"
         statement.execute(query)
     }
 
@@ -31,7 +39,7 @@ class MeetingSet
         val result: ResultSet = statement.executeQuery(query)
         result.next()
         val meeting = Meeting(result.getString("Title"))
-        meeting.date = result.getDate("StartDate")
+        meeting.date = result.getDate("StartDate").toLocalDate()
         meeting.startTime = result.getTime("StartTime")
         meeting.endTime = result.getTime("EndTime")
         meeting.room = result.getInt("Room_Id")
