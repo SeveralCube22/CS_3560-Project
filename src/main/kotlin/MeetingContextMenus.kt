@@ -2,6 +2,13 @@ import javax.swing.DefaultListModel
 import javax.swing.JMenuItem
 import javax.swing.JPopupMenu
 
+enum class OwnershipType
+{
+    OWNED,
+    INVITED,
+    ATTENDING
+}
+
 class OwnedMeetingsMenu(membership: MeetingMembership, model: DefaultListModel<MeetingMembership>): JPopupMenu()
 {
     val modify = JMenuItem("Modify")
@@ -9,9 +16,12 @@ class OwnedMeetingsMenu(membership: MeetingMembership, model: DefaultListModel<M
 
     init
     {
+        modify.addActionListener {
+            MeetingOwnerPanel(MeetingSet().getMeeting(membership.meetingTitle))
+        }
         delete.addActionListener{
             membership.deleteMeeting()
-            updateListModel(model, membership.employeeId, true)
+            updateListModel(model, membership.employeeId, OwnershipType.OWNED)
         }
 
         this.add(modify)
@@ -28,21 +38,36 @@ class InvitedMeetingsMenu(membership: MeetingMembership, model: DefaultListModel
     {
         accept.addActionListener {
             membership.acceptMeeting()
-            updateListModel(model, membership.employeeId, false)
+            updateListModel(model, membership.employeeId, OwnershipType.INVITED)
         }
 
         decline.addActionListener {
             membership.leaveMeeting()
-            updateListModel(model, membership.employeeId, false)
+            updateListModel(model, membership.employeeId, OwnershipType.ATTENDING)
         }
         this.add(accept)
         this.add(decline)
     }
 }
 
-private fun updateListModel(model: DefaultListModel<MeetingMembership>, employeeId: Int, owned: Boolean) { //pass in enum
+class AttendingMeetingsMenu(membership: MeetingMembership, model: DefaultListModel<MeetingMembership>): JPopupMenu()
+{
+    val leave =  JMenuItem("Leave")
+
+    init
+    {
+        leave.addActionListener {
+            membership.leaveMeeting()
+        }
+
+        this.add(leave)
+    }
+}
+
+private fun updateListModel(model: DefaultListModel<MeetingMembership>, employeeId: Int, type: OwnershipType) { //pass in enum
     model.removeAllElements()
-    var memberships = if (owned) MeetingMembershipSet().viewOwnedMeetings(employeeId) else MeetingMembershipSet().viewInvitedMeetings(employeeId)
-    for (membership in memberships)
-        model.addElement(membership)
+    var memberships = if (type == OwnershipType.OWNED) MeetingMembershipSet().viewOwnedMeetings(employeeId)
+                      else if(type == OwnershipType.INVITED) MeetingMembershipSet().viewInvitedMeetings(employeeId)
+                      else MeetingMembershipSet().viewAttendingMeetings(employeeId)
+    model.addAll(memberships)
 }

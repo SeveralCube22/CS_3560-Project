@@ -5,14 +5,7 @@ import java.sql.SQLException;
 
 class EmployeeSet
 {
-    private lateinit var connection: Connection
-    val test: String = "TEST"
-
-    init
-    {
-        Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
-        connection = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/meeting_scheduler?" + "user=root&password=ViswaM@01")
-    }
+    private val connection: Connection = SqlConnection.connection!!
 
     fun changeVisibility(id: Int, visibility: Boolean)
     {

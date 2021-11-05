@@ -10,7 +10,7 @@ enum class Status
     ACCEPTED,
     UNDECIDED
 }
-data class MeetingMembership(val employeeId: Int, val employeeName: String, val meetingTile: String, val isOwner: Boolean)
+data class MeetingMembership(val employeeId: Int, val employeeName: String, val meetingTitle: String, val isOwner: Boolean)
 {
     var status = Status.UNDECIDED
 
@@ -21,17 +21,17 @@ data class MeetingMembership(val employeeId: Int, val employeeName: String, val 
 
     fun createMembership() = membershipSet.insert(this)
 
-    fun leaveMeeting() = membershipSet.leaveMeeting(employeeId, meetingTile)
+    fun leaveMeeting() = membershipSet.leaveMeeting(employeeId, meetingTitle)
 
     fun acceptMeeting()
     {
-        membershipSet.acceptMeeting(employeeId, meetingTile)
+        membershipSet.acceptMeeting(employeeId, meetingTitle)
         status = Status.ACCEPTED
     }
 
     fun deleteMeeting()
     {
-        if(isOwner) MeetingMembershipSet().delete(meetingTile)
+        if(isOwner) MeetingMembershipSet().delete(meetingTitle)
     }
 
     class MeetingMembershipRenderer(): DefaultListCellRenderer()
@@ -56,7 +56,7 @@ data class MeetingMembership(val employeeId: Int, val employeeName: String, val 
             label.font = Font("Roboto", Font.PLAIN, 15)
             label.isOpaque = true
             if(membership is MeetingMembership)
-                label.text = "Title: ${membership.meetingTile}"
+                label.text = "Title: ${membership.meetingTitle}"
             if(isSelected)
                 label.background = Color.GREEN
             else
@@ -65,4 +65,26 @@ data class MeetingMembership(val employeeId: Int, val employeeName: String, val 
         }
     }
 
+    class MeetingMonthRenderer: DefaultListCellRenderer()
+    {
+        private val label = JLabel()
+
+        override fun getListCellRendererComponent(list: JList<*>?, membership: Any?, row: Int, isSelected: Boolean, hasFocus: Boolean): Component?
+        {
+            label.font = Font("Roboto", Font.PLAIN, 15)
+            label.isOpaque = true
+            if(membership is MeetingMembership)
+                label.text = "Title: ${membership.meetingTitle}"
+            if(isSelected)
+                label.background = Color.GREEN
+            else
+            {
+                if(membership is MeetingMembership && membership.isOwner)
+                    label.background = Color.CYAN
+                else
+                    label.background = Color.ORANGE
+            }
+            return label
+        }
+    }
 }

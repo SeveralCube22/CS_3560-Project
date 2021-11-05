@@ -8,12 +8,14 @@
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import java.util.*
 import java.time.LocalDate
+import java.util.*
 import javax.swing.*
 
 class MonthPanel(val employee: Employee, protected var month: Int, protected var year: Int, val frame: JFrame) : JPanel()
 {
+    private val meetingsModel = ArrayList<DateMeetings>()
+
     protected var monthNames = arrayOf(
         "January", "February",
         "March", "April", "May", "June", "July", "August", "September",
@@ -34,6 +36,18 @@ class MonthPanel(val employee: Employee, protected var month: Int, protected var
         monthPanel.foreground = Color.BLACK
         monthPanel.add(createTitleGUI(), BorderLayout.NORTH)
         monthPanel.add(createDaysGUI(), BorderLayout.SOUTH)
+
+        monthPanel.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent)
+            {
+                if(SwingUtilities.isRightMouseButton(e))
+                {
+                    val framePopup = FramePopMenu()
+                    framePopup.show(e.component, e.x, e.y)
+                }
+            }
+        })
         return monthPanel
     }
 
@@ -128,14 +142,13 @@ class MonthPanel(val employee: Employee, protected var month: Int, protected var
         val membershipModel = DefaultListModel<MeetingMembership>()
 
         val memberships = MeetingMembershipSet().getMeetingsOnDate(employee.id, date)
-        println("${employee.id} ${date} ${memberships.size}")
-        for(membership in memberships) membershipModel.addElement(membership)
+        membershipModel.addAll(memberships)
 
         val list = JList<MeetingMembership>(membershipModel)
 
         list.selectionBackground = Color.GREEN
         list.background = Color.WHITE
-        list.cellRenderer = MeetingMembership.MeetingRenderer()
+        list.cellRenderer = MeetingMembership.MeetingMonthRenderer()
 
         list.addMouseListener(object: MouseAdapter()
         {
@@ -146,11 +159,8 @@ class MonthPanel(val employee: Employee, protected var month: Int, protected var
                     val index = list.locationToIndex(e.point)
                     list.selectedIndex = index
                     val membership = membershipModel.get(index)
-                    val popup: JPopupMenu
-                    if(membership.isOwner)
-                        popup = OwnedMeetingsMenu(membership, membershipModel)
-                    else
-                        popup = InvitedMeetingsMenu(membership, membershipModel) //create acceptmeetingmenu
+                    val popup: JPopupMenu = if(membership.isOwner) OwnedMeetingsMenu(membership, membershipModel)
+                                            else AttendingMeetingsMenu(membership, membershipModel)
                     popup.show(e.component, e.x, e.y)
                 }
             }
@@ -161,7 +171,22 @@ class MonthPanel(val employee: Employee, protected var month: Int, protected var
         meetings.preferredSize = Dimension(frame.width / 3, frame.height / 3)
         meetings.isOpaque = false
         meetings.isWheelScrollingEnabled = true;
+
+        meetings.horizontalScrollBar.preferredSize = Dimension(10, 10)
+        meetings.verticalScrollBar.preferredSize = Dimension(10, 10)
+
+        meetingsModel.add(DateMeetings(date, membershipModel))
         return meetings
+    }
+
+    fun refresh()
+    {
+        for(date in meetingsModel)
+        {
+            val meetings = MeetingMembershipSet().getMeetingsOnDate(employee.id, date.date)
+            date.meetingModel.removeAllElements()
+            date.meetingModel.addAll(meetings)
+        }
     }
 
     companion object
@@ -172,5 +197,21 @@ class MonthPanel(val employee: Employee, protected var month: Int, protected var
     init
     {
         this.add(createGUI())
+    }
+
+    private class DateMeetings(val date: LocalDate, val meetingModel: DefaultListModel<MeetingMembership>)
+
+    private inner class FramePopMenu: JPopupMenu()
+    {
+        val unlisted = JMenuItem("Show Unlisted Meetings")
+
+        init
+        {
+            unlisted.addActionListener {
+
+            }
+
+            this.add(unlisted)
+        }
     }
 }

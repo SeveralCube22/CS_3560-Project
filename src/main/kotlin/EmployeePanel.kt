@@ -3,12 +3,16 @@ import java.awt.Dimension
 import java.awt.Rectangle
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.sql.Time
+import java.time.LocalDate
 import javax.swing.*
+
 
 class EmployeePanel(val employee: Employee): JFrame()
 {
     private val ownedMeetingModel = DefaultListModel<MeetingMembership>()
     private val invitedMeetingModel = DefaultListModel<MeetingMembership>()
+    private lateinit var monthPanel: MonthPanel
 
     init
     {
@@ -25,7 +29,7 @@ class EmployeePanel(val employee: Employee): JFrame()
         val parentLayout = BoxLayout(guiParent, BoxLayout.X_AXIS)
         guiParent.layout = parentLayout
 
-        val monthPanel = MonthPanel(employee,6, 2021, this)
+        monthPanel = MonthPanel(employee,6, 2021, this)
 
         val scrollPanelParent = JPanel()
         val scrollLayout = BoxLayout(scrollPanelParent, BoxLayout.Y_AXIS)
@@ -34,9 +38,14 @@ class EmployeePanel(val employee: Employee): JFrame()
         val ownedMeetingLayout = BoxLayout(ownedMeetingPanel, BoxLayout.Y_AXIS)
         ownedMeetingPanel.layout = ownedMeetingLayout
         ownedMeetingPanel.add(getOwnedMeetingsPanel())
-        val createButton = JButton()
-        createButton.text = "Create Meeting"
-        createButton.addMouseListener(object: MouseAdapter()
+
+        val createPanels = JPanel()
+        val createPanelsLayout = BoxLayout(createPanels, BoxLayout.X_AXIS)
+        createPanels.layout = createPanelsLayout
+
+        val createMeeting = JButton()
+        createMeeting.text = "Create Meeting"
+        createMeeting.addMouseListener(object: MouseAdapter()
         {
             override fun mouseClicked(e: MouseEvent?)
             {
@@ -51,7 +60,39 @@ class EmployeePanel(val employee: Employee): JFrame()
                 MeetingOwnerPanel(meeting)
             }
         })
-        ownedMeetingPanel.add(createButton)
+
+        val createTask = JButton()
+        createTask.text = "Create Task"
+        createTask.addMouseListener(object: MouseAdapter()
+        {
+            override fun mouseClicked(e: MouseEvent?)
+            {
+                val taskDesc = JTextField()
+                val startDate = JTextField()
+                val startTime = JTextField()
+                val endTime = JTextField()
+
+                val message = arrayOf<Any>(
+                    "Task Description: ", taskDesc,
+                    "Start Date:", startDate,
+                    "Start Time:", startTime,
+                    "End Time:", endTime
+                )
+                val option = JOptionPane.showConfirmDialog(
+                    parent,
+                    message,
+                    "Enter all your values",
+                    JOptionPane.OK_CANCEL_OPTION
+                )
+                if (option == JOptionPane.OK_OPTION)
+                    Task(employee.id, taskDesc.text, LocalDate.parse(startDate.text), Time.valueOf(startTime.text), Time.valueOf(endTime.text)).insert()
+            }
+        })
+
+        createPanels.add(createMeeting)
+        createPanels.add(createTask)
+
+        ownedMeetingPanel.add(createPanels)
 
         scrollPanelParent.add(ownedMeetingPanel)
         scrollPanelParent.add(getInvitations())
@@ -183,6 +224,7 @@ class EmployeePanel(val employee: Employee): JFrame()
             refresh.addActionListener {
                 updateListModel(true)
                 updateListModel(false)
+                monthPanel.refresh()
             }
 
             this.add(visibility)

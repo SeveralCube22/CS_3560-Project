@@ -7,6 +7,11 @@ import javax.swing.DefaultListCellRenderer
 import javax.swing.JLabel
 import javax.swing.JList
 
+/**
+ * Represents a meeting.
+ * @author Viswadeep Manam
+ * @constructor Creates a meeting with title as Id.
+ */
 data class Meeting(val title: String)
 {
     var date: LocalDate? = null
@@ -14,13 +19,22 @@ data class Meeting(val title: String)
     var endTime: Time? = null
     var room: Int? = null
 
+    /**
+     * Static meeting set object for database operations.
+     */
     companion object
     {
         private val meetingSet = MeetingSet()
     }
 
+    /**
+     * Inserts this meeting in the database.
+     */
     fun insert() = meetingSet.insert(this)
 
+    /**
+     * Deletes this meeting in the database
+     */
     fun delete() = meetingSet.delete(title)
 
     fun updateTimings(date: LocalDate, startTime: Time, endTime: Time, room: Int) = meetingSet.updateTime(this.title, date, startTime, endTime, room)

@@ -13,7 +13,8 @@ fun main(args: Array<String>)
     //e3.insert()
     //e4.insert()
 
-    Meeting("Meeting #1").updateTimings(LocalDate.of(2021, 7, 30), Time(1, 30, 5), Time(2, 30, 5), 1)
+    //Meeting("Meeting #1").updateTimings(LocalDate.of(2021, 7, 30), Time(1, 30, 5), Time(2, 30, 5), 1)
     EmployeePanel(employee)
     EmployeePanel(e2)
+    EmployeePanel(e4)
 }

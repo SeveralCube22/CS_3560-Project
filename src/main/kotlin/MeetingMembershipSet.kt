@@ -1,24 +1,16 @@
 import java.sql.Connection
-import java.sql.Date
-import java.sql.DriverManager
 import java.sql.ResultSet
 import java.time.LocalDate
 
 class MeetingMembershipSet
 {
-    private lateinit var connection: Connection
-
-    init
-    {
-        Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
-        connection = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/meeting_scheduler?" + "user=root&password=ViswaM@01")
-    }
+    private val connection: Connection = SqlConnection.connection!!
 
     fun insert(membership: MeetingMembership)
     {
         val statement = connection.createStatement()
         val query = "INSERT INTO M_MEMBERSHIP VALUES (${membership.employeeId}, '${membership.employeeName}', " +
-                    "'${membership.meetingTile}', ${membership.isOwner}, " +
+                    "'${membership.meetingTitle}', ${membership.isOwner}, " +
                     "${if(membership.isOwner) "TRUE" else "FALSE"});"
         statement.execute(query)
     }
@@ -138,6 +130,29 @@ class MeetingMembershipSet
                 result.getString("M_Title"), result.getBoolean("M_Owner"))
             membership.status = if(result.getBoolean("Emp_Status")) Status.ACCEPTED else Status.UNDECIDED
             memberships.add(membership)
+        }
+        return memberships
+    }
+
+    fun getUnlistedMeetings(employeeId: Int): ArrayList<MeetingMembership>
+    {
+        val statement = connection.createStatement()
+        val query = "SELECT * FROM (M_MEMBERSHIP AS M_M JOIN EMPLOYEE AS E ON M_M.Emp_Id = E.Id) " +
+                "JOIN MEETING AS M ON M_M.M_Title = M.Title " +
+                "WHERE E.Id = ${employeeId} AND M.StartDate IS NULL';"
+
+        val result: ResultSet = statement.executeQuery(query)
+        val memberships = ArrayList<MeetingMembership>()
+        while(result.next())
+        {
+            if(result.getBoolean("M_M.Emp_Status"))
+            {
+                val membership = MeetingMembership(
+                    result.getInt("M_M.Emp_Id"), result.getString("M_M.Emp_Name"),
+                    result.getString("M_M.M_Title"), result.getBoolean("M_M.M_Owner"))
+                membership.status = Status.ACCEPTED
+                memberships.add(membership)
+            }
         }
         return memberships
     }
